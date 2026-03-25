@@ -10,3 +10,4 @@ CREATE TABLE IF NOT EXISTS inquiries (
     status TEXT DEFAULT 'new', -- 'new' (신규), 'read' (확인), 'done' (완료)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+rP
