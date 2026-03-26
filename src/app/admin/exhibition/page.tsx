@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import DeleteExhibitionButton from "@/components/admin/DeleteExhibitionButton";
 import { Button } from "@/components/ui/button";
 
@@ -7,14 +7,9 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminExhibitionList() {
-    const { data: exhibitions, error } = await supabase
-        .from("exhibitions")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-    if (error) {
-        return <div className="p-10 text-red-500">에러 발생: {error.message}</div>;
-    }
+    const exhibitions = await prisma.exhibition.findMany({
+        orderBy: { created_at: "desc" },
+    });
 
     return (
         <div className="max-w-screen-xl mx-auto py-20 px-6">
@@ -68,7 +63,7 @@ export default async function AdminExhibitionList() {
                                         <p className="text-sm text-gray-500">{item.artist}</p>
                                     </td>
                                     <td className="p-4 text-sm text-gray-600">
-                                        {item.start_date} ~ {item.end_date}
+                                        {item.start_date ? new Date(item.start_date).toISOString().split("T")[0] : ""} ~ {item.end_date ? new Date(item.end_date).toISOString().split("T")[0] : ""}
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col gap-1 items-start">

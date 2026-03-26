@@ -1,42 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { updateInquiryStatus } from "@/actions/inquiryStatusAction";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Eye } from "lucide-react";
 
 type Inquiry = {
   id: string;
-  type: "general" | "exhibition";
+  type: string;
   name: string;
   phone: string;
   email: string | null;
   content: string;
-  status: "new" | "read" | "done";
-  created_at: string;
+  status: string | null;
+  created_at: string | Date;
 };
 
 export default function InquiryListClient({ initialInquiries }: { initialInquiries: Inquiry[] }) {
@@ -45,29 +45,19 @@ export default function InquiryListClient({ initialInquiries }: { initialInquiri
   const [filter, setFilter] = useState("all"); // all, new, exhibition, general
   const [updating, setUpdating] = useState(false);
 
-  // Supabase Client
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  // 상태 변경 함수
-  const updateStatus = async (id: string, newStatus: "new" | "read" | "done") => {
+  // 상태 변경 함수 (서버 액션 사용)
+  const handleUpdateStatus = async (id: string, newStatus: "new" | "read" | "done") => {
     setUpdating(true);
-    const { error } = await supabase
-      .from("inquiries")
-      .update({ status: newStatus })
-      .eq("id", id);
-    
-    if (!error) {
+    try {
+      await updateInquiryStatus(id, newStatus);
       setInquiries((prev) =>
         prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
       );
       if (selectedInquiry?.id === id) {
         setSelectedInquiry({ ...selectedInquiry, status: newStatus });
       }
-    } else {
-        alert("업데이트 실패: " + error.message);
+    } catch (error) {
+      alert("업데이트 실패: " + String(error));
     }
     setUpdating(false);
   };
@@ -138,7 +128,7 @@ export default function InquiryListClient({ initialInquiries }: { initialInquiri
                           size="sm"
                           onClick={() => {
                             setSelectedInquiry(item);
-                            if (item.status === "new") updateStatus(item.id, "read");
+                            if (item.status === "new") handleUpdateStatus(item.id, "read");
                           }}
                         >
                           <Eye size={16} />
@@ -147,13 +137,13 @@ export default function InquiryListClient({ initialInquiries }: { initialInquiri
                       <DialogContent className="max-w-2xl">
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
-                            {selectedInquiry?.type === "exhibition" ? "🎨 전시 및 대관 신청" : "💬 일반 문의"}
+                            {selectedInquiry?.type === "exhibition" ? "전시 및 대관 신청" : "일반 문의"}
                             <span className="text-xs font-normal text-gray-400 ml-auto">
-                              {selectedInquiry?.created_at.split("T")[0]}
+                              {selectedInquiry ? new Date(selectedInquiry.created_at).toISOString().split("T")[0] : ""}
                             </span>
                           </DialogTitle>
                         </DialogHeader>
-                        
+
                         {selectedInquiry && (
                           <div className="space-y-6 py-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -179,17 +169,17 @@ export default function InquiryListClient({ initialInquiries }: { initialInquiri
                             </div>
 
                             <div className="flex justify-end gap-2 pt-4 border-t">
-                                <Select 
-                                    value={selectedInquiry.status} 
-                                    onValueChange={(val: any) => updateStatus(selectedInquiry.id, val)}
+                                <Select
+                                    value={selectedInquiry.status || "new"}
+                                    onValueChange={(val: any) => handleUpdateStatus(selectedInquiry.id, val)}
                                 >
                                     <SelectTrigger className="w-[140px]">
                                         <SelectValue placeholder="상태 변경" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="new">🔴 신규 접수</SelectItem>
-                                        <SelectItem value="read">🔵 확인 중</SelectItem>
-                                        <SelectItem value="done">⚫ 처리 완료</SelectItem>
+                                        <SelectItem value="new">신규 접수</SelectItem>
+                                        <SelectItem value="read">확인 중</SelectItem>
+                                        <SelectItem value="done">처리 완료</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -1,28 +1,15 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-context";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 // 전시 관리 버튼
 export function AdminExhibitionButton() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  useEffect(() => {
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    
-    // 세션 체크
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setIsAdmin(true);
-    });
-  }, []);
+  const { user, loading } = useAuth();
 
-  if (!isAdmin) return null;
+  if (loading || !user) return null;
 
   return (
     <Button asChild className="bg-black text-white hover:bg-gray-800 gap-2">
@@ -35,20 +22,9 @@ export function AdminExhibitionButton() {
 
 // 미디어 관리 버튼
 export function AdminMediaButton() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setIsAdmin(true);
-    });
-  }, []);
-
-  if (!isAdmin) return null;
+  if (loading || !user) return null;
 
   return (
     <Button asChild className="bg-black text-white hover:bg-gray-800 gap-2">

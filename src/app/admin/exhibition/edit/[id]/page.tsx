@@ -5,7 +5,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import dynamicImport from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { getExhibitionById, clearExhibitionPoster, updateExhibition } from "@/actions/exhibitionEditActions";
 
 // Editor를 동적으로 import (SSR 방지)
 const Editor = dynamicImport(() => import("@/components/Editor"), {
@@ -26,13 +26,9 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
 
     useEffect(() => {
         async function loadExhibition() {
-            const { data, error } = await supabase
-                .from("exhibitions")
-                .select("*")
-                .eq("id", id)
-                .single();
+            const data = await getExhibitionById(id);
 
-            if (error) {
+            if (!data) {
                 alert("전시 정보를 불러올 수 없습니다.");
                 router.push("/admin/exhibition");
                 return;
@@ -50,18 +46,13 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
     const handleDeleteImage = async () => {
         if (!confirm("이미지를 삭제하시겠습니까?")) return;
 
-        const { error } = await supabase
-            .from("exhibitions")
-            .update({ poster_url: null })
-            .eq("id", id);
-
-        if (error) {
+        try {
+            await clearExhibitionPoster(id);
+            setExhibition({ ...exhibition, poster_url: null });
+            alert("이미지가 삭제되었습니다.");
+        } catch {
             alert("이미지 삭제 실패");
-            return;
         }
-
-        setExhibition({ ...exhibition, poster_url: null });
-        alert("이미지가 삭제되었습니다.");
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,71 +60,14 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
         setIsLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        const imageFile = formData.get("poster") as File;
+        // 기존 포스터 URL과 에디터 내용을 서버 액션에 전달
+        formData.set("existing_poster_url", exhibition.poster_url || "");
+        formData.set("description", descHtml);
 
-        let poster_url = exhibition.poster_url;
+        const result = await updateExhibition(id, formData);
 
-        // 새 이미지가 업로드된 경우
-        if (imageFile && imageFile.size > 0) {
-            // 기존 이미지가 있으면 Storage에서 삭제
-            if (exhibition.poster_url) {
-                try {
-                    // URL에서 파일명 추출 (전체 경로에서 마지막 부분만)
-                    const urlParts = exhibition.poster_url.split('/');
-                    const oldFileName = urlParts[urlParts.length - 1];
-
-                    // 쿼리 파라미터 제거 (예: ?token=xxx)
-                    const cleanFileName = oldFileName.split('?')[0];
-
-                    if (cleanFileName && cleanFileName !== 'null' && cleanFileName !== 'undefined') {
-                        await supabase.storage
-                            .from("posters")
-                            .remove([cleanFileName]);
-                    }
-                } catch (error) {
-                    console.error("기존 이미지 삭제 실패:", error);
-                    // 삭제 실패해도 계속 진행
-                }
-            }
-
-            // 새 이미지 업로드
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from("posters")
-                .upload(fileName, imageFile);
-
-            if (uploadError) {
-                console.error("업로드 에러:", uploadError);
-                alert(`이미지 업로드 실패: ${uploadError.message}`);
-                setIsLoading(false);
-                return;
-            }
-
-            const { data: urlData } = supabase.storage
-                .from("posters")
-                .getPublicUrl(fileName);
-            poster_url = urlData.publicUrl;
-        }
-
-        const { error } = await supabase
-            .from("exhibitions")
-            .update({
-                title: formData.get("title") as string,
-                artist: formData.get("artist") as string,
-                start_date: formData.get("start_date") as string,
-                end_date: formData.get("end_date") as string,
-                description: descHtml,
-                poster_url,
-                is_active: formData.get("is_active") === "on",
-                is_main_slider: formData.get("is_main_slider") === "on",
-                youtube_url: (formData.get("youtube_url") as string) || null, // 수정: 유튜브 URL 추가
-            })
-            .eq("id", id);
-
-        if (error) {
-            alert("수정 실패");
+        if (!result.success) {
+            alert(result.message || "수정 실패");
             setIsLoading(false);
             return;
         }
@@ -185,7 +119,7 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
                             <input
                                 name="start_date"
                                 type="date"
-                                defaultValue={exhibition.start_date}
+                                defaultValue={exhibition.start_date ? new Date(exhibition.start_date).toISOString().split("T")[0] : ""}
                                 className="w-full border-b border-gray-300 p-2 focus:outline-none focus:border-black transition"
                                 required
                             />
@@ -195,7 +129,7 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
                             <input
                                 name="end_date"
                                 type="date"
-                                defaultValue={exhibition.end_date}
+                                defaultValue={exhibition.end_date ? new Date(exhibition.end_date).toISOString().split("T")[0] : ""}
                                 className="w-full border-b border-gray-300 p-2 focus:outline-none focus:border-black transition"
                                 required
                             />
@@ -269,7 +203,7 @@ export default function EditExhibitionPage({ params }: { params: Promise<{ id: s
                                 메인 슬라이더에 표시
                             </label>
                         </div>
-                        
+
                         <div className="flex-1">
                              <input
                                name="youtube_url"

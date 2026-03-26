@@ -1,7 +1,8 @@
 // src/actions/exhibitionActions.ts
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
+import { supabaseStorage } from "@/lib/supabase-storage";
 import { revalidatePath } from "next/cache";
 
 export async function createExhibition(formData: FormData) {
@@ -21,13 +22,12 @@ export async function createExhibition(formData: FormData) {
       return { success: false, message: "제목과 포스터 이미지는 필수입니다." };
     }
 
-    // 2. 이미지 업로드 로직 (Supabase Storage)
-    // 파일명 충돌 방지를 위해 현재시간 + 파일명 조합 (한글 파일명은 안전하게 인코딩)
+    // 2. 이미지 업로드 로직 (Supabase Storage — 임시 유지)
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}.${fileExt}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("images") // 버킷 이름
+    const { data: uploadData, error: uploadError } = await supabaseStorage.storage
+      .from("images")
       .upload(`exhibitions/${fileName}`, file);
 
     if (uploadError) {
@@ -36,37 +36,34 @@ export async function createExhibition(formData: FormData) {
     }
 
     // 3. 업로드된 이미지의 공개 주소(URL) 가져오기
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseStorage.storage
       .from("images")
       .getPublicUrl(uploadData.path);
 
     const finalImageUrl = publicUrlData.publicUrl;
 
-    // 4. DB에 정보 저장 (Exhibitions 테이블)
-    const youtube_url = formData.get("youtube_url") as string; // 유튜브 URL 추가
+    // 4. DB에 정보 저장 (Prisma)
+    const youtube_url = formData.get("youtube_url") as string;
 
-    const { error: dbError } = await supabase.from("exhibitions").insert({
-      title,
-      artist: subtitle, // DB 컬럼명이 artist라면 이렇게 매핑 (subtitle -> artist)
-      description,
-      start_date,
-      end_date,
-      is_active: true, // 기본값 활성
-      poster_url: finalImageUrl, // DB 컬럼명이 poster_url이라면 이렇게 매핑
-      is_main_slider,
-      youtube_url: youtube_url || null, // 값이 없으면 null로 저장
+    await prisma.exhibition.create({
+      data: {
+        title,
+        artist: subtitle,
+        description,
+        start_date: start_date ? new Date(start_date) : null,
+        end_date: end_date ? new Date(end_date) : null,
+        is_active: true,
+        poster_url: finalImageUrl,
+        is_main_slider,
+        youtube_url: youtube_url || null,
+      },
     });
 
-    if (dbError) {
-      console.error("DB Error:", dbError);
-      return { success: false, message: "전시 등록 실패" };
-    }
-
     // 5. 페이지 갱신
-    revalidatePath("/"); // 메인 페이지 갱신
-    revalidatePath("/archive"); // 아카이브 페이지 갱신
-    revalidatePath("/admin/exhibition"); // 관리자 목록 갱신
-    
+    revalidatePath("/");
+    revalidatePath("/archive");
+    revalidatePath("/admin/exhibition");
+
     return { success: true };
   } catch (error) {
     console.error("Server Action Error:", error);
@@ -75,11 +72,7 @@ export async function createExhibition(formData: FormData) {
 }
 
 export async function deleteExhibition(id: string) {
-  const { error } = await supabase.from("exhibitions").delete().eq("id", id);
-
-  if (error) {
-    throw new Error("전시 삭제 실패");
-  }
+  await prisma.exhibition.delete({ where: { id } });
 
   revalidatePath("/admin/exhibition");
   revalidatePath("/archive");

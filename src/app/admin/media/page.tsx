@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import DeleteMediaButton from "@/components/admin/DeleteMediaButton";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Eye, Edit } from "lucide-react";
@@ -7,15 +7,12 @@ import { ExternalLink, Eye, Edit } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function AdminMediaList() {
-  const { data: mediaList, error } = await supabase
-    .from("media_releases")
-    .select("*")
-    .order("published_date", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return <div className="p-10 text-red-500">에러 발생: {error.message}</div>;
-  }
+  const mediaList = await prisma.mediaRelease.findMany({
+    orderBy: [
+      { published_date: { sort: "desc", nulls: "last" } },
+      { created_at: "desc" },
+    ],
+  });
 
   return (
     <div className="max-w-screen-xl mx-auto py-20 px-6">
@@ -73,7 +70,7 @@ export default async function AdminMediaList() {
                   </td>
                   <td className="p-4 text-center">
                     <a
-                      href={item.link_url}
+                      href={item.link_url || "#"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center text-gray-400 hover:text-blue-600"

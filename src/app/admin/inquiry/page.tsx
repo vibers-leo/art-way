@@ -1,19 +1,14 @@
 
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import InquiryListClient from "@/components/admin/InquiryListClient";
 
 // 캐싱 방지 (실시간 확인 필요)
 export const dynamic = "force-dynamic";
 
 export default async function AdminInquiryPage() {
-  const { data: inquiries, error } = await supabase
-    .from("inquiries")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return <div className="p-8 text-red-500">데이터 로드 실패: {error.message}</div>;
-  }
+  const inquiries = await prisma.inquiry.findMany({
+    orderBy: { created_at: "desc" },
+  });
 
   return (
     <div className="max-w-screen-xl mx-auto px-6 py-12">

@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { getMediaById, clearMediaImage, updateMedia } from "@/actions/mediaEditActions";
 import dynamicImport from "next/dynamic";
 
 // Editor를 동적으로 import (SSR 방지)
@@ -25,13 +25,9 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
 
     useEffect(() => {
         async function loadMedia() {
-            const { data, error } = await supabase
-                .from("media_releases")
-                .select("*")
-                .eq("id", id)
-                .single();
+            const data = await getMediaById(id);
 
-            if (error) {
+            if (!data) {
                 alert("보도자료 정보를 불러올 수 없습니다.");
                 router.push("/admin/media");
                 return;
@@ -49,18 +45,13 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
     const handleDeleteImage = async () => {
         if (!confirm("이미지를 삭제하시겠습니까?")) return;
 
-        const { error } = await supabase
-            .from("media_releases")
-            .update({ image_url: null })
-            .eq("id", id);
-
-        if (error) {
+        try {
+            await clearMediaImage(id);
+            setMedia({ ...media, image_url: null });
+            alert("이미지가 삭제되었습니다.");
+        } catch {
             alert("이미지 삭제 실패");
-            return;
         }
-
-        setMedia({ ...media, image_url: null });
-        alert("이미지가 삭제되었습니다.");
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -68,68 +59,13 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
         setIsLoading(true);
 
         const formData = new FormData(e.currentTarget);
-        const imageFile = formData.get("image") as File;
+        // 기존 이미지 URL을 서버 액션에 전달
+        formData.set("existing_image_url", media.image_url || "");
 
-        let image_url = media.image_url;
+        const result = await updateMedia(id, formData);
 
-        // 새 이미지가 업로드된 경우
-        if (imageFile && imageFile.size > 0) {
-            // 기존 이미지가 있으면 Storage에서 삭제
-            if (media.image_url) {
-                try {
-                    // URL에서 파일명 추출 (전체 경로에서 마지막 부분만)
-                    const urlParts = media.image_url.split('/');
-                    const oldFileName = urlParts[urlParts.length - 1];
-
-                    // 쿼리 파라미터 제거 (예: ?token=xxx)
-                    const cleanFileName = oldFileName.split('?')[0];
-
-                    if (cleanFileName && cleanFileName !== 'null' && cleanFileName !== 'undefined') {
-                        await supabase.storage
-                            .from("media_images")
-                            .remove([cleanFileName]);
-                    }
-                } catch (error) {
-                    console.error("기존 이미지 삭제 실패:", error);
-                    // 삭제 실패해도 계속 진행
-                }
-            }
-
-            // 새 이미지 업로드
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from("media_images")
-                .upload(fileName, imageFile);
-
-            if (uploadError) {
-                console.error("업로드 에러:", uploadError);
-                alert(`이미지 업로드 실패: ${uploadError.message}`);
-                setIsLoading(false);
-                return;
-            }
-
-            const { data: urlData } = supabase.storage
-                .from("media_images")
-                .getPublicUrl(fileName);
-            image_url = urlData.publicUrl;
-        }
-
-        const { error } = await supabase
-            .from("media_releases")
-            .update({
-                press_name: formData.get("press_name") as string,
-                title: formData.get("title") as string,
-                link_url: formData.get("link_url") as string,
-                content: formData.get("content") as string,
-                published_date: formData.get("published_date") as string || null,
-                image_url,
-            })
-            .eq("id", id);
-
-        if (error) {
-            alert("수정 실패");
+        if (!result.success) {
+            alert(result.message || "수정 실패");
             setIsLoading(false);
             return;
         }
@@ -192,7 +128,7 @@ export default function EditMediaPage({ params }: { params: Promise<{ id: string
                     <input
                         name="published_date"
                         type="date"
-                        defaultValue={media.published_date || ""}
+                        defaultValue={media.published_date ? new Date(media.published_date).toISOString().split("T")[0] : ""}
                         className="w-full border-b border-gray-300 p-2 focus:outline-none focus:border-black transition"
                     />
                     <p className="text-xs text-gray-500 mt-1">기사가 작성된 날짜를 선택하세요. 입력하지 않으면 등록일이 표시됩니다.</p>

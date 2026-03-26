@@ -1,24 +1,21 @@
 
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import SocialConnect from "@/components/SocialConnect";
 import { AdminMediaButton } from "@/components/AdminButtons";
 
-// 🚀 ISR 적용: 60초마다 캐시 갱신 (서버 부하 감소 & 속도 향상)
+// ISR 적용: 60초마다 캐시 갱신
 export const revalidate = 60;
 
 export default async function MediaPage() {
-  const { data: pressReleases } = await supabase
-    .from("media_releases")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const items = pressReleases || [];
+  const items = await prisma.mediaRelease.findMany({
+    orderBy: { created_at: "desc" },
+  });
 
   return (
     <div className="max-w-screen-2xl mx-auto px-6 mt-8 py-12 md:py-20 space-y-24">
-      
+
       {/* 섹션 1: Press Release */}
       <section>
         <div className="flex justify-between items-end mb-8 border-b border-black pb-4">
@@ -35,9 +32,9 @@ export default async function MediaPage() {
                   {/* 1. 썸네일 이미지 (왼쪽) */}
                   {item.image_url && (
                     <div className="w-full md:w-48 aspect-video shrink-0 overflow-hidden rounded-md bg-gray-100">
-                      <img 
-                        src={item.image_url} 
-                        alt={item.title} 
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </div>
@@ -53,21 +50,18 @@ export default async function MediaPage() {
                         {/* 날짜 표시: 기사게시일 우선 */}
                         <div className="flex items-center gap-1 text-gray-400 text-sm shrink-0">
                           <span>
-                            {item.published_date 
+                            {item.published_date
                               ? new Date(item.published_date).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
                               : new Date(item.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
                           </span>
                         </div>
                       </div>
-                      
+
                       <h3 className="text-lg md:text-xl font-medium leading-snug group-hover:underline decoration-1 underline-offset-4 mb-3">
                         {item.title}
                       </h3>
-                      
-                      {/* 간단한 미리보기 텍스트 (옵션) */}
-                      {/* <p className="text-gray-500 text-sm line-clamp-2">...</p> */}
                     </div>
-                    
+
                     <div className="flex items-center text-xs text-gray-400 mt-2">
                       <ExternalLink size={12} className="mr-1" /> 자세히 보기
                     </div>
@@ -86,7 +80,7 @@ export default async function MediaPage() {
         <h2 className="text-3xl font-serif mb-10 border-b border-black pb-4">
           Connect
         </h2>
-        
+
         <div className="py-8">
           <SocialConnect />
         </div>

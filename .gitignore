@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma 생성 파일 (prisma generate로 재생성)
+/generated/prisma
+/src/generated/prisma

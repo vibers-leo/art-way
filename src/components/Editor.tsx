@@ -6,7 +6,7 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useEffect } from "react";
 import "@blocknote/mantine/style.css"; // 스타일 불러오기
-import { supabase } from "@/lib/supabase"; // Supabase 클라이언트 임포트
+import { supabaseStorage } from "@/lib/supabase-storage"; // Storage 전용 클라이언트
 
 interface EditorProps {
   onChange: (html: string) => void; // 부모에게 HTML을 전달할 함수
@@ -17,7 +17,6 @@ export default function Editor({ onChange, initialContent }: EditorProps) {
   // 에디터 생성
   const editor = useCreateBlockNote({
     uploadFile: async (file: File) => {
-      // ... (기존 코드와 동일)
       // 1. 파일명 생성 (충돌 방지)
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}_${Math.random()
@@ -25,9 +24,9 @@ export default function Editor({ onChange, initialContent }: EditorProps) {
         .substring(7)}.${fileExt}`;
 
       try {
-        // 2. Supabase Storage에 업로드 (클라이언트 사이드 업로드)
-        const { data, error } = await supabase.storage
-          .from("images") // 'images' 버킷 사용
+        // 2. Supabase Storage에 업로드 (임시 유지)
+        const { data, error } = await supabaseStorage.storage
+          .from("images")
           .upload(`editor/${fileName}`, file);
 
         if (error) {
@@ -38,7 +37,7 @@ export default function Editor({ onChange, initialContent }: EditorProps) {
         // 3. 공개 URL 가져오기
         const {
           data: { publicUrl },
-        } = supabase.storage.from("images").getPublicUrl(data.path);
+        } = supabaseStorage.storage.from("images").getPublicUrl(data.path);
 
         return publicUrl;
       } catch (error) {
@@ -58,8 +57,6 @@ export default function Editor({ onChange, initialContent }: EditorProps) {
     }
     loadInitialContent();
   }, [editor]); // initialContent는 의존성에서 제외 (무한루프 방지)
-
-  // ... (나머지 코드)
 
   // 내용이 바뀔 때마다 실행되는 함수
   const handleChange = async () => {
