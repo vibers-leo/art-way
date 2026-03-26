@@ -1,14 +1,23 @@
 // src/app/reset-password/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-context";
 
 export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oobCode, setOobCode] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const { confirmReset } = useAuth();
+
+  useEffect(() => {
+    const code = searchParams.get("oobCode");
+    setOobCode(code);
+  }, [searchParams]);
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -29,16 +38,20 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      setError("비밀번호 변경에 실패했습니다. 다시 시도해주세요.");
+    if (!oobCode) {
+      setError("유효하지 않은 링크입니다. 비밀번호 재설정을 다시 요청해주세요.");
       setLoading(false);
       return;
     }
 
-    setSuccess(true);
-    setLoading(false);
+    try {
+      await confirmReset(oobCode, password);
+      setSuccess(true);
+    } catch {
+      setError("비밀번호 변경에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

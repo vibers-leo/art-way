@@ -1,20 +1,17 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/auth-context";
 
 export default function LogoutButton() {
   const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
     router.push("/");
-    router.refresh(); // 상태 갱신
+    router.refresh();
   };
 
   return (

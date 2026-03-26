@@ -3,23 +3,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { login } from "@/actions/authActions"; // 곧 만들 파일
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-context";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
 
-    const result = await login(formData);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    if (result?.error) {
-      setError(result.error);
+    try {
+      await login(email, password);
+      router.push("/admin/media/write");
+    } catch {
+      setError("로그인 정보가 올바르지 않습니다.");
       setLoading(false);
     }
-    // 성공하면 서버 액션에서 리다이렉트하므로 처리 불필요
   };
 
   return (

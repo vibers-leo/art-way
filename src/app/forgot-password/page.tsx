@@ -3,12 +3,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/auth-context";
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { resetPassword } = useAuth();
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -17,18 +18,14 @@ export default function ForgotPasswordPage() {
 
     const email = formData.get("email") as string;
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
-
-    if (error) {
+    try {
+      await resetPassword(email);
+      setSuccess(true);
+    } catch {
       setError("비밀번호 재설정 이메일 전송에 실패했습니다.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSuccess(true);
-    setLoading(false);
   };
 
   return (

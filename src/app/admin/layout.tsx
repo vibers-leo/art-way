@@ -1,12 +1,35 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import LogoutButton from "@/components/LogoutButton";
+import { useAuth } from "@/components/auth/auth-context";
 
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const { user, loading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login");
+        }
+    }, [user, loading, router]);
+
+    // 로딩 중이거나 미인증 상태일 때
+    if (loading || !user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <p className="text-gray-500">로딩 중...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 pt-20">
             {/* Admin Header / Nav */}
