@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { login } from "@/actions/authActions"; // 곧 만들 파일
 
 export default function LoginPage() {
@@ -63,6 +64,13 @@ export default function LoginPage() {
             {loading ? "로그인 중..." : "LOGIN"}
           </button>
         </form>
+
+        <Link
+          href="/forgot-password"
+          className="block text-sm text-center text-gray-500 hover:text-black transition mt-4"
+        >
+          비밀번호를 잊으셨나요?
+        </Link>
       </div>
     </div>
   );
