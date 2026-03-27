@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { supabaseStorage } from "@/lib/supabase-storage";
+import { uploadImage } from "@/lib/upload";
 import { revalidatePath } from "next/cache";
 
 export async function createExhibition(formData: FormData) {
@@ -22,27 +22,20 @@ export async function createExhibition(formData: FormData) {
       return { success: false, message: "제목과 포스터 이미지는 필수입니다." };
     }
 
-    // 2. 이미지 업로드 로직 (Supabase Storage — 임시 유지)
+    // 2. 이미지 업로드 (NCP 서버)
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}.${fileExt}`;
 
-    const { data: uploadData, error: uploadError } = await supabaseStorage.storage
-      .from("images")
-      .upload(`exhibitions/${fileName}`, file);
+    const { url, error: uploadError } = await uploadImage(file, "images", `exhibitions/${fileName}`);
 
     if (uploadError) {
       console.error("Upload Error:", uploadError);
       return { success: false, message: "이미지 업로드 실패" };
     }
 
-    // 3. 업로드된 이미지의 공개 주소(URL) 가져오기
-    const { data: publicUrlData } = supabaseStorage.storage
-      .from("images")
-      .getPublicUrl(uploadData.path);
+    const finalImageUrl = url;
 
-    const finalImageUrl = publicUrlData.publicUrl;
-
-    // 4. DB에 정보 저장 (Prisma)
+    // 3. DB에 정보 저장 (Prisma)
     const youtube_url = formData.get("youtube_url") as string;
 
     await prisma.exhibition.create({
@@ -59,7 +52,7 @@ export async function createExhibition(formData: FormData) {
       },
     });
 
-    // 5. 페이지 갱신
+    // 4. 페이지 갱신
     revalidatePath("/");
     revalidatePath("/archive");
     revalidatePath("/admin/exhibition");

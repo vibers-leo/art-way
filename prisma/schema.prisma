@@ -1,4 +1,4 @@
-// Prisma 스키마 — Supabase에서 자체 PostgreSQL로 마이그레이션
+// Prisma 스키마 — 자체 PostgreSQL
 
 generator client {
   provider = "prisma-client"

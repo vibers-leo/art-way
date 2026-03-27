@@ -6,7 +6,6 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useEffect } from "react";
 import "@blocknote/mantine/style.css"; // 스타일 불러오기
-import { supabaseStorage } from "@/lib/supabase-storage"; // Storage 전용 클라이언트
 
 interface EditorProps {
   onChange: (html: string) => void; // 부모에게 HTML을 전달할 함수
@@ -24,22 +23,23 @@ export default function Editor({ onChange, initialContent }: EditorProps) {
         .substring(7)}.${fileExt}`;
 
       try {
-        // 2. Supabase Storage에 업로드 (임시 유지)
-        const { data, error } = await supabaseStorage.storage
-          .from("images")
-          .upload(`editor/${fileName}`, file);
+        // 2. NCP 서버에 업로드 (API 프록시 경유)
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("bucket", "images");
+        formData.append("path", `editor/${fileName}`);
 
-        if (error) {
-          console.error("Image upload failed:", error);
-          throw error;
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error(`업로드 실패: ${res.statusText}`);
         }
 
-        // 3. 공개 URL 가져오기
-        const {
-          data: { publicUrl },
-        } = supabaseStorage.storage.from("images").getPublicUrl(data.path);
-
-        return publicUrl;
+        const data = await res.json();
+        return data.url || `http://49.50.138.93:8090/images/editor/${fileName}`;
       } catch (error) {
         console.error("Error uploading image:", error);
         return "https://via.placeholder.com/150?text=Upload+Error"; // 에러 시 대체 이미지

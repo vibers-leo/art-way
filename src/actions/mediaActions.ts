@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { supabaseStorage } from "@/lib/supabase-storage";
+import { uploadImage } from "@/lib/upload";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -18,22 +18,17 @@ export async function createMedia(formData: FormData) {
 
   let image_url: string | null = null;
 
-  // 이미지가 있으면 Supabase Storage에 업로드 (임시 유지)
+  // 이미지가 있으면 NCP 서버에 업로드
   if (imageFile && imageFile.size > 0) {
     const fileExt = imageFile.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    const { data: uploadData, error: uploadError } = await supabaseStorage.storage
-      .from("media_images")
-      .upload(fileName, imageFile);
+    const { url, error } = await uploadImage(imageFile, "media_images", fileName);
 
-    if (uploadError) {
-      console.error("Image upload error:", uploadError);
+    if (error) {
+      console.error("Image upload error:", error);
     } else {
-      const { data: urlData } = supabaseStorage.storage
-        .from("media_images")
-        .getPublicUrl(fileName);
-      image_url = urlData.publicUrl;
+      image_url = url;
     }
   }
 

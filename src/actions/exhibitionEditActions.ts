@@ -2,7 +2,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { supabaseStorage } from "@/lib/supabase-storage";
+import { uploadImage, deleteImage } from "@/lib/upload";
 import { revalidatePath } from "next/cache";
 
 // 전시 단건 조회
@@ -25,15 +25,15 @@ export async function updateExhibition(id: string, formData: FormData) {
 
   let poster_url = existingPosterUrl;
 
-  // 새 이미지가 업로드된 경우 (Supabase Storage — 임시 유지)
+  // 새 이미지가 업로드된 경우 (NCP 서버)
   if (imageFile && imageFile.size > 0) {
-    // 기존 이미지 Storage 삭제 시도
+    // 기존 이미지 삭제 시도
     if (existingPosterUrl) {
       try {
         const urlParts = existingPosterUrl.split('/');
         const oldFileName = urlParts[urlParts.length - 1].split('?')[0];
         if (oldFileName && oldFileName !== 'null' && oldFileName !== 'undefined') {
-          await supabaseStorage.storage.from("posters").remove([oldFileName]);
+          await deleteImage("posters", oldFileName);
         }
       } catch (error) {
         console.error("기존 이미지 삭제 실패:", error);
@@ -44,18 +44,13 @@ export async function updateExhibition(id: string, formData: FormData) {
     const fileExt = imageFile.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    const { error: uploadError } = await supabaseStorage.storage
-      .from("posters")
-      .upload(fileName, imageFile);
+    const { url, error: uploadError } = await uploadImage(imageFile, "posters", fileName);
 
     if (uploadError) {
-      return { success: false, message: `이미지 업로드 실패: ${uploadError.message}` };
+      return { success: false, message: `이미지 업로드 실패: ${uploadError}` };
     }
 
-    const { data: urlData } = supabaseStorage.storage
-      .from("posters")
-      .getPublicUrl(fileName);
-    poster_url = urlData.publicUrl;
+    poster_url = url;
   }
 
   const descHtml = formData.get("description") as string;

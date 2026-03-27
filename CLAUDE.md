@@ -7,12 +7,17 @@
 - BlockNote 리치 에디터 + AI Recipe 이미지 통합
 - 아티스트 커뮤니티 확보 및 수익화 모델 설계 필요
 
+### 빌더 공통 지침
+- **gstack 빌더 철학**: 맥미니 루트 `gstack.md` — Boil the Lake, Search Before Building, 스프린트 프로세스
+- **개발 프로세스**: Think → Plan → Build → Review → Test → Ship → Reflect
+- **핵심 규칙**: 테스트 동시 작성, 새 패턴 도입 전 검색, 압축률 기반 추정
+
 ---
 
 # Art-Way (아트웨이)
 
 ## 프로젝트 개요
-아트 관련 콘텐츠 플랫폼. Supabase 백엔드 + BlockNote 리치 텍스트 에디터를 활용한 아트 콘텐츠 관리 및 전시 웹앱.
+아트 관련 콘텐츠 플랫폼. Prisma + PostgreSQL + BlockNote 리치 텍스트 에디터를 활용한 아트 콘텐츠 관리 및 전시 웹앱.
 
 ## 상위 브랜드
 - 회사: 계발자들 (Vibers)
@@ -25,7 +30,9 @@
 - Styling: Tailwind CSS 3 + shadcn/ui (CSS 변수 기반)
 - UI 라이브러리: Radix UI (Dialog, Select, Slot)
 - 에디터: BlockNote (Core + React + Mantine 테마)
-- 백엔드: Supabase (Auth + DB + Storage)
+- DB: 자체 PostgreSQL (Prisma ORM)
+- 인증: Firebase Auth
+- 이미지: NCP 서버 (http://49.50.138.93:8090)
 - Utilities: clsx, tailwind-merge, class-variance-authority
 - Animation: tailwindcss-animate
 - Icons: Lucide React
@@ -55,7 +62,7 @@ art-way/
 │   │   └── media/           ← 미디어
 │   ├── actions/             ← Server Actions
 │   ├── components/          ← UI 컴포넌트
-│   ├── lib/                 ← 유틸리티 (Supabase 클라이언트 등)
+│   ├── lib/                 ← 유틸리티 (DB, 업로드 등)
 │   └── middleware.ts        ← 인증 미들웨어
 ├── tailwind.config.ts       ← Tailwind 설정 (shadcn/ui 토큰)
 └── package.json
@@ -64,7 +71,7 @@ art-way/
 ## 핵심 파일
 - `src/app/globals.css`: shadcn/ui HSL CSS 변수 (라이트/다크 모드)
 - `tailwind.config.ts`: 색상 매핑 (`hsl(var(--변수))`) + 애니메이션 키프레임
-- `src/middleware.ts`: Supabase Auth 기반 인증 미들웨어
+- `src/middleware.ts`: Firebase Auth 기반 인증 미들웨어
 
 ## 개발 규칙
 
@@ -82,7 +89,7 @@ art-way/
 ### BlockNote 에디터
 - `@blocknote/core`, `@blocknote/react`, `@blocknote/mantine` 사용
 - 에디터 내 이미지: `.prose img` 스타일로 반응형 처리
-- Supabase Storage와 연동하여 이미지 업로드
+- NCP 이미지 서버와 연동하여 이미지 업로드
 
 ### 디자인 준수
 - 반응형 브레이크포인트: 640, 768, 1024, 1280px
@@ -109,7 +116,7 @@ bun test           # 테스트
 ```
 
 ## 특이사항
-- Supabase SSR(`@supabase/ssr`) 사용으로 서버 컴포넌트에서도 인증 처리 가능
+- Firebase Auth 사용으로 클라이언트/서버 모두 인증 처리 가능
 - BlockNote 에디터는 클라이언트 컴포넌트에서만 렌더링 (`'use client'`)
 - shadcn/ui 색상 시스템은 art-way와 arthyun이 동일한 기본 팔레트 사용
 
