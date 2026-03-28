@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import LogoutButton from "@/components/LogoutButton";
 import { useAuth } from "@/components/auth/auth-context";
+import Script from "next/script";
 import VibersBanner from "@/components/VibersBanner";
 
 export default function AdminLayout({
@@ -32,6 +33,13 @@ export default function AdminLayout({
     }
 
     return (
+        <>
+        <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7704550771011130"
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+        />
         <div className="min-h-screen bg-gray-50 pt-20">
             {/* Admin Header / Nav */}
             <div className="bg-white border-b border-gray-200">
@@ -90,5 +98,6 @@ export default function AdminLayout({
                 <VibersBanner size="medium" currentProject="art-way" />
             </div>
         </div>
+        </>
     );
 }
