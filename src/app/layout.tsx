@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Noto_Serif_KR, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -50,6 +51,18 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
       <body className="font-sans text-gray-900 bg-white selection:bg-black selection:text-white">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-CGK1BSBM63"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-CGK1BSBM63');
+          `}
+        </Script>
         <AuthProvider>
           {/* 방문자 추적기 (관리자 통계용) */}
           <VisitorTracker />
