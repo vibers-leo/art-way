@@ -28,7 +28,16 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       images: ogImage,
+      url: "https://art-way.vercel.app",
+      siteName: "Artway Gallery",
       type: "website",
+      locale: "ko_KR",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ogImage,
     },
   };
 }
