@@ -113,6 +113,10 @@ export default function RootLayout({
               </div>
 
             </div>
+            <div className="max-w-screen-2xl mx-auto px-6 mt-12 pt-8 border-t border-gray-100 flex justify-center gap-6 text-[10px] text-gray-400">
+              <a href="/privacy" className="hover:text-black transition">개인정보처리방침</a>
+              <a href="/terms" className="hover:text-black transition">이용약관</a>
+            </div>
           </footer>
         </AuthProvider>
       </body>
