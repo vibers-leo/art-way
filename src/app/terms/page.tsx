@@ -22,7 +22,7 @@ export default function TermsPage() {
             제1조 (목적)
           </h2>
           <p className="text-base text-gray-700 leading-relaxed">
-            본 약관은 계발자들(Vibers)(이하 &quot;회사&quot;)이 운영하는 아트웨이 갤러리 웹사이트(이하 &quot;사이트&quot;)에서 제공하는 서비스(이하 &quot;서비스&quot;)를 이용함에 있어 회사와 이용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+            본 약관은 아트웨이 협동조합(이하 &quot;회사&quot;)이 운영하는 아트웨이 갤러리 웹사이트(이하 &quot;사이트&quot;)에서 제공하는 서비스(이하 &quot;서비스&quot;)를 이용함에 있어 회사와 이용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
           </p>
         </section>
 
@@ -138,7 +138,7 @@ export default function TermsPage() {
           <div className="text-sm text-gray-600 space-y-1">
             <p>개인정보 보호책임자: 이준호 (대표)</p>
             <p>연락처: 010-9249-3872</p>
-            <p>운영회사: 계발자들 (Vibers)</p>
+            <p>운영회사: 아트웨이 협동조합</p>
           </div>
         </div>
       </div>
