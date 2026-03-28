@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Noto_Serif_KR, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -50,6 +51,12 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
       <body className="font-sans text-gray-900 bg-white selection:bg-black selection:text-white">
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7704550771011130"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <AuthProvider>
           {/* 방문자 추적기 (관리자 통계용) */}
           <VisitorTracker />
